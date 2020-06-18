@@ -1,61 +1,87 @@
 Сервис для просмотра отзывов, оценок врачей в различных клиниках, а так же просмотра отзывов о клинике в целом.
 Каждый пользователь может оставить свой отзыв о той или иной клинике и враче. 
-Кроме того, можно записаться на прием в любую клинику и любому доктору.
+Кроме того, можно записаться на прием в любую клинику и любому доктору, которые зарегистрированы на данном сервисе.
 
 1)Таблица пользователей
-users
-	id
-	firstname
-	lastname
-	email
-	phone
+drop table if exists users;
+create table users(
+	id serial primary key,
+	firstname varchar(255),
+	lastname varchar(255),
+	email varchar(255) unique,
+	phone bigint 
+);	
 	
 2)Типы пользователей
-type_users
-	id
-	name (patient/doctor)
+drop table if exists type_users;
+create table type_users(
+	id serial primary key,
+	name enum('пациент','доктор') not null
+);
 -- при регистрации на сайте пользователь может зарегистрироваться как пациент или как доктор
+
+3)Специальности врачей
+drop table if exists specialty;
+create table specialty(
+	id serial primary key,
+	name enum('офтальмолог','хирург','аллерголог','гастроэнтеролог','иммунолог',
+	'кардиолог','невролог','онколог','терапевт','трихолог','уролог','эндокринолог') not null
+);
+-- enum чтобы база заполнялась только конкретными специальностями, а не какими-то абстрактными.
+
+4)Фотографии пользователей/врачей/клиник
+drop table if exists photo;
+create table photo(
+	id serial primary key,
+	name varchar(255)
+);
 	
-3)Профиль пользователей
-profiles
-	user_id
-	gender
-	birthday
-	hometown
-	photo_id
-	type_user_id
-	specialty_id (специальность врача)
-	стаж работы
-	категория (при наличии:высшая,1)
-	created_at -- дата регистрации на сайте
+5)Профиль пользователей
+drop table if exists profiles;
+create table profiles(
+	user_id serial primary key,
+	gender enum('м','ж'),
+	birthday date,
+	hometown varchar(255),
+	photo_id bigint unsigned not null,
+	type_user_id bigint unsigned not null,
+	created_at datetime, -- дата регистрации на сайте
+	foreign key (user_id) references users(id)
+		ON UPDATE cascade -- при изменении данных в главной таблице, обновятся данные и в зависимой таблице
+    	ON DELETE restrict,  -- отклоняем удаление строк в главной таблице при наличии связей
+	foreign key (photo_id) references photo(id),
+	foreign key (type_user_id) references type_users(id)
+);
 	
 -- здесь информация о пользователях, как о пациентах, так и докторах.
--- можно ли на этапе создания таблиц прописать условие для полей "specialty_id","стаж работы","категория": если тип пользователя = patient, то эти поля по умолчанию не заполняются и остаются пустыми?
 -- или лучше создавать отдельные таблицы 1)с пациентами и 2)с докторами?
  	
-4)Специальности врачей
-specialty
-	id
-	name
 	
-5)doctors_specialties
-	user_id
-	specialty_id
+6)doctors_specialties
+drop table if exists doctors_specialties;
+create table doctors_specialties(
+	user_id serial primary key, -- можно ли сделать, чтобы в эту таблицу попадали только врачи?
+	specialty_id bigint unsigned not null, -- можно ли сделать так, чтобы поле заполнялось только для врачей?
+	experience int unsigned not null, -- можно ли сделать так, чтобы поле заполнялось только для врачей?
+	category enum('высшая','1 категория','2 категория','3 категория','null'), -- null если категории нет, можно ли сделать так, чтобы поле заполнялось только для врачей?
+	foreign key (user_id) references users(id),
+	foreign key (specialty_id) references specialty(id)
+);
 -- так как у одного доктора может быть несколько специальностей и к одной специальности относится много докторов, связь М:М
--- можно ли здесь тоже как-то ограничить? т.е. не у каждого пользователя есть специальность, а только у врачей.
-	
-6)Список клиник
+
+Далее составила таблицы пока только схематично.	
+7)Список клиник
 clinics
 	id
 	name
 	
-7)doctors_clinics
-	user_id
+8)doctors_clinics
+	user_id -- можно ли задать какое-то условие чтобы в эту таблицу попадали только врачи? т.к. только врачи работают в клинике
 	clinic_id
 -- один доктор может работать в разных клиниках одновременно и в одной клинике работает много докторов, связь М:М
--- здесь тоже аналогично таблице 5, можно ли сделать условие, что только врачи работают в какой-то клинике
 
-8)Профиль клиники
+
+9)Профиль клиники
 info_clinic
 	clinic_id
 	photo_id
@@ -63,11 +89,6 @@ info_clinic
 	phone
 	body
 	reviews_id
-	
-9)Фотографии пользователей/врачей/клиник
-photo
-	id
-	name
 	
 10)Отзывы
 reviews
