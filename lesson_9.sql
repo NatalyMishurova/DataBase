@@ -13,9 +13,11 @@ commit;
 2. Создайте представление, которое выводит название name товарной позиции 
 из таблицы products и соответствующее название каталога name из таблицы catalogs.
 */
-
-create view name_prod (name_product,name_catalog)
-as select products.name,catalogs.name from products,catalogs;
+create view name_prod
+as select
+	name,
+	(select name from catalogs where id = catalog_id) as catalog
+from products;
 
 select * from name_prod;
 
@@ -27,23 +29,34 @@ select * from name_prod;
 с 18:00 до 00:00 — "Добрый вечер", с 00:00 до 6:00 — "Доброй ночи".
 */
 
+drop function if exists hello;
+DELIMITER //
 create function hello()
-returns tinytext
+returns text reads sql data
 begin
-	declare hour int;
-	set hour = hour(now());
+	declare t int;
+	set t = hour(now());
 	case
-		when hour between 0 and 6 then 
+		when t between 0 and 6 then 
 			return 'Доброй ночи';
-		when hour between 6 and 12 then 
+		when t between 6 and 12 then 
 			return 'Доброе утро';
-		when hour between 12 and 18 then
+		when t between 12 and 18 then
 			return 'Добрый день';
-		when hour between 18 and 0 then
+		else
 			return 'Добрый вечер';
 	end case;
-end//
+end
+//
+DELIMITER ;
 
-/* второе задание сделать не успеваю, к сожалению
+select hello();
+
+/*
+2. В таблице products есть два текстовых поля: name с названием товара и description с его описанием. 
+Допустимо присутствие обоих полей или одно из них. 
+Ситуация, когда оба поля принимают неопределенное значение NULL неприемлема. 
+Используя триггеры, добейтесь того, чтобы одно из этих полей или оба поля были заполнены. 
+При попытке присвоить полям NULL-значение необходимо отменить операцию.
  */
-
+-- пока не сделала...
