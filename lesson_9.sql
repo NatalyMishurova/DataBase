@@ -59,4 +59,21 @@ select hello();
 Используя триггеры, добейтесь того, чтобы одно из этих полей или оба поля были заполнены. 
 При попытке присвоить полям NULL-значение необходимо отменить операцию.
  */
--- пока не сделала...
+
+drop trigger if exists nullname;
+delimiter //
+create trigger nullname before insert on shop.products 
+for each row 
+begin 
+	if new.name is null and new.description is null then      
+		signal sqlstate '45000' set message_text = 'ошибка';
+	end if;
+end
+//
+delimiter ;
+
+insert into products (name,description)
+values (null,null); -- ошибка
+
+insert into products (name,description)
+values (null,'описание'); -- все ок
